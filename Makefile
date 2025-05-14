@@ -27,7 +27,7 @@ test:
 	go test -v
 
 build: format get
-	CGO_ENABLED=0 GOOS=${TARGET_OS} GOARCH=${TARGET_ARCH} go build -ldflags "-X="github.com/dnason/kbot/cmd.appVersion=${VERSION}
+	CGO_ENABLED=0 GOOS=${TARGET_OS} GOARCH=${TARGET_ARCH} go build -o kbot -ldflags "-X="github.com/dnason/kbot/cmd.appVersion=${VERSION}
 
 linux: format get
 	CGO_ENABLED=0 GOOS=linux GOARCH=$(TARGET_ARCH) go build -v -o kbot -ldflags "-X="github.com/vit-um/kbot/cmd.appVersion=${VERSION}
