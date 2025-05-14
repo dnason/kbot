@@ -14,7 +14,7 @@ APP:=$(shell basename $(shell git remote get-url origin))
 USERNAME:=dnason
 VERSION:=$(shell git describe --tags --abbrev=0)-$(shell git rev-parse --short HEAD)
 
-format:  
+format:
 	gofmt -w -s ./
 
 get:
