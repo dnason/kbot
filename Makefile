@@ -1,5 +1,5 @@
 ifeq '$(findstring ;,$(PATH))' ';'
-	detected_OS := windows
+	TARGET_OS_OS := windows
 	TARGET_ARCH := amd64
 else
 	TARGET_OS := $(shell uname | tr '[:upper:]' '[:lower:]' 2> /dev/null || echo Unknown)
