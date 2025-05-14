@@ -1,4 +1,4 @@
-GOLANG_IMAGE = gquay.io/projectquay/golang:1.24
+GOLANG_IMAGE = golang:1.24
 DOCKER_RUN = docker run --rm -v $(PWD):/app -w /app $(GOLANG_IMAGE)
 APP := $(shell basename $(shell git remote get-url origin))
 USERNAME := dnason
