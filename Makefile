@@ -34,16 +34,16 @@ linux: format get
 	docker build --build-arg name=linux -t ${REGISTRY}/${USERNAME}/${APP}:${VERSION}-linux-$(TARGET_ARCH) .
 
 windows: format get
-	CGO_ENABLED=0 GOOS=windows GOARCH=$(detected_arch) go build -v -o kbot -ldflags "-X="github.com/vit-um/kbot/cmd.appVersion=${VERSION}
+	CGO_ENABLED=0 GOOS=windows GOARCH=$(TARGET_ARCH) go build -v -o kbot -ldflags "-X="github.com/vit-um/kbot/cmd.appVersion=${VERSION}
 	docker build --build-arg name=windows -t ${REGISTRY}/${USERNAME}/${APP}:${VERSION}-windows-$(TARGET_ARCH) .
 
 darwin:format get
-	CGO_ENABLED=0 GOOS=darwin GOARCH=$(detected_arch) go build -v -o kbot -ldflags "-X="github.com/vit-um/kbot/cmd.appVersion=${VERSION}
+	CGO_ENABLED=0 GOOS=darwin GOARCH=$(TARGET_ARCH) go build -v -o kbot -ldflags "-X="github.com/vit-um/kbot/cmd.appVersion=${VERSION}
 	docker build --build-arg name=darwin -t ${REGISTRY}/${USERNAME}/${APP}:${VERSION}-darwin-$(TARGET_ARCH) .
 
 arm: format get
-	CGO_ENABLED=0 GOOS=$(detected_OS) GOARCH=arm go build -v -o kbot -ldflags "-X="github.com/vit-um/kbot/cmd.appVersion=${VERSION}
-	docker build --build-arg name=arm -t ${REGISTRY}/${USERNAME}/${APP}:${VERSION}-$(detected_OS)-arm .
+	CGO_ENABLED=0 GOOS=$(TARGET_OS) GOARCH=arm go build -v -o kbot -ldflags "-X="github.com/vit-um/kbot/cmd.appVersion=${VERSION}
+	docker build --build-arg name=arm -t ${REGISTRY}/${USERNAME}/${APP}:${VERSION}-$(TARGET_ARCH)-arm .
 
 image: 
 	docker build . -t ${REGISTRY}/${USERNAME}/${APP}/${VERSION}-${TARGET_ARCH}
@@ -55,4 +55,3 @@ clean:
 	@rm -rf kbot; \
 	DOCKER_IMAGE=$$(docker images -q | head -n 1); \
 	if [ -n "$${DOCKER_IMAGE}" ]; then  docker rmi -f $${DOCKER_IMAGE}; fi
-
