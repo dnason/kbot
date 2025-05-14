@@ -45,13 +45,13 @@ arm: format get
 	CGO_ENABLED=0 GOOS=$(TARGET_OS) GOARCH=arm go build -v -o kbot -ldflags "-X="github.com/vit-um/kbot/cmd.appVersion=${VERSION}
 	docker build --build-arg name=arm -t ${REGISTRY}/${USERNAME}/${APP}:${VERSION}-${TARGET_OS}-arm .
 
-image: 
+image: build
 	docker build . -t ${REGISTRY}/${USERNAME}/${APP}/${VERSION}-${TARGET_ARCH}
 
 push:
 	docker push ${REGISTRY}/${USERNAME}/${APP}/${VERSION}-${TARGET_ARCH}
 
 clean:
-	@rm -rf kbot
-	-docker rm -f $(shell docker ps -aq --filter ancestor=${REGISTRY}/${USERNAME}/${APP}:${VERSION}-${TARGET_ARCH}) 2>/dev/null || true
-	-docker rmi -f ${REGISTRY}/${USERNAME}/${APP}:${VERSION}-${TARGET_ARCH} 2>/dev/null || true
+	@rm -rf kbot; \
+	DOCKER_IMAGE=$$(docker images -q | head -n 1); \
+	if [ -n "$${DOCKER_IMAGE}" ]; then  docker rmi -f $${DOCKER_IMAGE}; fi
