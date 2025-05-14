@@ -52,6 +52,6 @@ push:
 	docker push ${REGISTRY}/${USERNAME}/${APP}/${VERSION}-${TARGET_ARCH}
 
 clean:
-	@rm -rf kbot; \
-	DOCKER_IMAGE=$$(docker images -q | head -n 1); \
-	if [ -n "$${DOCKER_IMAGE}" ]; then  docker rmi -f $${DOCKER_IMAGE}; fi
+	@rm -rf kbot
+	-docker rm -f $(shell docker ps -aq --filter ancestor=${REGISTRY}/${USERNAME}/${APP}:${VERSION}-${TARGET_ARCH}) 2>/dev/null || true
+	-docker rmi -f ${REGISTRY}/${USERNAME}/${APP}:${VERSION}-${TARGET_ARCH} 2>/dev/null || true
