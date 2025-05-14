@@ -1,55 +1,56 @@
 ifeq '$(findstring ;,$(PATH))' ';'
-	detected_OS := windows
+    TARGET_OS := windows
 	TARGET_ARCH := amd64
 else
-	TARGET_OS := $(shell uname | tr '[:upper:]' '[:lower:]' 2> /dev/null || echo Unknown)
-	TARGET_OS := $(patsubst CYGWIN%,Cygwin,$(TARGET_OS))
-	TARGET_OS := $(patsubst MSYS%,MSYS,$(TARGET_OS))
-	TARGET_OS := $(patsubst MINGW%,MSYS,$(TARGET_OS))
-	TARGET_ARCH := $(shell uname -m || echo amd64)
+    TARGET_OS := $(shell uname | tr '[:upper:]' '[:lower:]' 2> /dev/null || echo Unknown)
+    TARGET_OS := $(patsubst CYGWIN%,Cygwin,$(TARGET_OS))
+    TARGET_OS := $(patsubst MSYS%,MSYS,$(TARGET_OS))
+    TARGET_OS := $(patsubst MINGW%,MSYS,$(TARGET_OS))
+	TARGET_ARCH := $(shell dpkg --print-architecture 2>/dev/null || amd64)
 endif
 
-REGISTRY := ghcr.io
-APP := $(shell basename $(shell git remote get-url origin))
-USERNAME := dnason
-VERSION := $(shell git describe --tags --abbrev=0 2>/dev/null || echo v0.1.0)-$(shell git rev-parse --short HEAD 2>/dev/null || echo unknown)
-
+APP=$(shell basename $(shell git remote get-url origin))
+REGESTRY=dnason
+VERSION=$(shell git describe --tags --abbrev=0)-$(shell git rev-parse --short HEAD)
+	
 format:
-	docker run --rm -v $(CURDIR):/app -w /app golang:1.24-alpine sh -c "gofmt -w -s ./"
+	gofmt -s -w ./
 
 get:
-	docker run --rm -v $(CURDIR):/app -w /app golang:1.24-alpine sh -c "go get"
+	go get
 
 lint:
-	docker run --rm -v $(CURDIR):/app -w /app golang:1.24-alpine sh -c "go install golang.org/x/lint/golint@latest && golint"
+	golint
 
 test:
-	docker run --rm -v $(CURDIR):/app -w /app golang:1.24-alpine sh -c "go test -v"
+	go test -v
 
-build:
-	docker run --rm -v $(CURDIR):/app -w /app golang:1.24-alpine sh -c "CGO_ENABLED=0 GOOS=${TARGET_OS} GOARCH=${TARGET_ARCH} go build -o kbot -ldflags \"-X=github.com/dnason/kbot/cmd.appVersion=${VERSION}\""
-
-image: format get
-	docker build --build-arg GOOS=${TARGET_OS} --build-arg GOARCH=${TARGET_ARCH} --build-arg VERSION=${VERSION} -t ${REGISTRY}/${USERNAME}/${APP}:${VERSION}-${TARGET_OS}-${TARGET_ARCH} .
+build: format get
+	CGO_ENABLED=0 GOOS=$(TARGET_OS) GOARCH=$(TARGET_ARCH) go build -v -o kbot -ldflags "-X="github.com/dnason/kbot/cmd.appVersion=${VERSION}
 
 linux: format get
-	docker build --build-arg GOOS=linux --build-arg GOARCH=${TARGET_ARCH} --build-arg VERSION=${VERSION} -t ${REGISTRY}/${USERNAME}/${APP}:${VERSION}-linux-${TARGET_ARCH} .
+	CGO_ENABLED=0 GOOS=linux GOARCH=$(TARGET_ARCH) go build -v -o kbot -ldflags "-X="github.com/dnason/kbot/cmd.appVersion=${VERSION}
+	docker build --build-arg name=linux -t ${REGESTRY}/${APP}:${VERSION}-linux-$(TARGET_ARCH) .
 
 windows: format get
-	docker build --build-arg GOOS=windows --build-arg GOARCH=${TARGET_ARCH} --build-arg VERSION=${VERSION} -t ${REGISTRY}/${USERNAME}/${APP}:${VERSION}-windows-${TARGET_ARCH} .
+	CGO_ENABLED=0 GOOS=windows GOARCH=$(TARGET_ARCH) go build -v -o kbot -ldflags "-X="github.com/dnason/kbot/cmd.appVersion=${VERSION}
+	docker build --build-arg name=windows -t ${REGESTRY}/${APP}:${VERSION}-windows-$(TARGET_ARCH) .
 
-darwin: format get
-	docker build --build-arg GOOS=darwin --build-arg GOARCH=${TARGET_ARCH} --build-arg VERSION=${VERSION} -t ${REGISTRY}/${USERNAME}/${APP}:${VERSION}-darwin-${TARGET_ARCH} .
+darwin:format get
+	CGO_ENABLED=0 GOOS=darwin GOARCH=$(TARGET_ARCH) go build -v -o kbot -ldflags "-X="github.com/dnason/kbot/cmd.appVersion=${VERSION}
+	docker build --build-arg name=darwin -t ${REGESTRY}/${APP}:${VERSION}-darwin-$(TARGET_ARCH) .
 
 arm: format get
-	docker build --build-arg GOOS=${TARGET_OS} --build-arg GOARCH=arm --build-arg VERSION=${VERSION} -t ${REGISTRY}/${USERNAME}/${APP}:${VERSION}-${TARGET_OS}-arm .
+	CGO_ENABLED=0 GOOS=$(TARGET_OS) GOARCH=arm go build -v -o kbot -ldflags "-X="github.com/vit-um/dnason/cmd.appVersion=${VERSION}
+	docker build --build-arg name=arm -t ${REGESTRY}/${APP}:${VERSION}-$(TARGET_OS)-arm .
+
+image: build
+	docker build . -t ${REGESTRY}/${APP}:${VERSION}-$(TARGET_ARCH)
 
 push:
-	docker push ${REGISTRY}/${USERNAME}/${APP}:${VERSION}-${TARGET_OS}-${TARGET_ARCH}
+	docker push ${REGESTRY}/${APP}:${VERSION}-$(TARGET_ARCH)
 
 clean:
-	@rm -rf kbot 2>/dev/null || true
-	@DOCKER_IMAGE=$$(docker images -q ${REGISTRY}/${USERNAME}/${APP}:${VERSION}-${TARGET_OS}-${TARGET_ARCH} 2>/dev/null); \
-	if [ -n "$${DOCKER_IMAGE}" ]; then docker rmi -f $${DOCKER_IMAGE}; fi
-
-.PHONY: format get lint test build image linux windows darwin arm push clean
+	@rm -rf kbot; \
+	DOCKER_IMAGE=$$(docker images -q | head -n 1); \
+	if [ -n "$${DOCKER_IMAGE}" ]; then  docker rmi -f $${DOCKER_IMAGE}; else printf "Image not found\n"; fi
