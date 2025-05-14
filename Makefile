@@ -9,24 +9,23 @@ else
 	TARGET_ARCH := $(shell dpkg --print-architecture 2>/dev/null || amd64)
 endif
 
+GOLANG_IMAGE = quay.io/projectquay/golang:1.24
+DOCKER_RUN = docker run --rm -v $(PWD):/app -w /app $(GOLANG_IMAGE)
 APP=$(shell basename $(shell git remote get-url origin))
 REGESTRY=dnason
 VERSION=$(shell git describe --tags --abbrev=0)-$(shell git rev-parse --short HEAD)
 
-install: 
-	sudo apt install golang-go
-	
 format:
-	gofmt -s -w ./
+	$(DOCKER_RUN) gofmt -s -w ./
 
 get:
-	go get
+	$(DOCKER_RUN) go get
 
 lint:
-	golint
+	$(DOCKER_RUN) golint
 
 test:
-	go test -v
+	$(DOCKER_RUN)  go test -v
 
 build: format get
 	CGO_ENABLED=0 GOOS=$(TARGET_OS) GOARCH=$(TARGET_ARCH) go build -v -o kbot -ldflags "-X="github.com/dnason/kbot/cmd.appVersion=${VERSION}
@@ -56,4 +55,4 @@ push:
 clean:
 	@rm -rf kbot; \
 	DOCKER_IMAGE=$$(docker images -q | head -n 1); \
-	if [ -n "$${DOCKER_IMAGE}" ]; then  docker rmi -f $${DOCKER_IMAGE}; else printf "Image not found\n"; fi
+	if [ -n "$${DOCKER_IMAGE}" ]; then  docker rmi -f $${DOCKER_IMAGE}; fi
