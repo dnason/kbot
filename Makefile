@@ -30,19 +30,19 @@ build: format get
 	CGO_ENABLED=0 GOOS=${TARGET_OS} GOARCH=${TARGET_ARCH} go build -o kbot -ldflags "-X="github.com/dnason/kbot/cmd.appVersion=${VERSION}
 
 linux: format get
-	CGO_ENABLED=0 GOOS=linux GOARCH=$(TARGET_ARCH) go build -v -o kbot -ldflags "-X="github.com/vit-um/kbot/cmd.appVersion=${VERSION}
+	CGO_ENABLED=0 GOOS=linux GOARCH=$(TARGET_ARCH) go build -v -o kbot -ldflags "-X="github.com/dnason/kbot/cmd.appVersion=${VERSION}
 	docker build --build-arg name=linux -t ${REGISTRY}/${USERNAME}/${APP}:${VERSION}-linux-$(TARGET_ARCH) .
 
 windows: format get
-	CGO_ENABLED=0 GOOS=windows GOARCH=$(TARGET_ARCH) go build -v -o kbot -ldflags "-X="github.com/vit-um/kbot/cmd.appVersion=${VERSION}
+	CGO_ENABLED=0 GOOS=windows GOARCH=$(TARGET_ARCH) go build -v -o kbot -ldflags "-X="github.com/dnason/kbot/cmd.appVersion=${VERSION}
 	docker build --build-arg name=windows -t ${REGISTRY}/${USERNAME}/${APP}:${VERSION}-windows-$(TARGET_ARCH) .
 
 darwin:format get
-	CGO_ENABLED=0 GOOS=darwin GOARCH=$(TARGET_ARCH) go build -v -o kbot -ldflags "-X="github.com/vit-um/kbot/cmd.appVersion=${VERSION}
+	CGO_ENABLED=0 GOOS=darwin GOARCH=$(TARGET_ARCH) go build -v -o kbot -ldflags "-X="github.com/dnason/kbot/cmd.appVersion=${VERSION}
 	docker build --build-arg name=darwin -t ${REGISTRY}/${USERNAME}/${APP}:${VERSION}-darwin-$(TARGET_ARCH) .
 
 arm: format get
-	CGO_ENABLED=0 GOOS=$(TARGET_OS) GOARCH=arm go build -v -o kbot -ldflags "-X="github.com/vit-um/kbot/cmd.appVersion=${VERSION}
+	CGO_ENABLED=0 GOOS=$(TARGET_OS) GOARCH=arm go build -v -o kbot -ldflags "-X="github.com/dnason/kbot/cmd.appVersion=${VERSION}
 	docker build --build-arg name=arm -t ${REGISTRY}/${USERNAME}/${APP}:${VERSION}-${TARGET_OS}-arm .
 
 image: build
