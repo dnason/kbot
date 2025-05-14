@@ -24,7 +24,8 @@ test:
 	$(DOCKER_RUN) go test -v ./...
 
 build:
-	$(DOCKER_RUN) sh -c "CGO_ENABLED=0 GOOS=$(TARGET_OS) GOARCH=$(TARGET_ARCH) go build -v -o kbot -ldflags='-X=github.com/dnason/kbot/cmd.appVersion=$(VERSION)'"
+	$(DOCKER_RUN) sh -c "CGO_ENABLED=0 GOOS=$(TARGET_OS) GOARCH=$(TARGET_ARCH) go build -buildvcs=false -v -o kbot -ldflags='-X=github.com/dnason/kbot/cmd.appVersion=$(VERSION)'"
+
 
 image: build
 	docker build --build-arg name=build -t $(USERNAME)/$(APP):$(VERSION)-$(TARGET_OS)-$(TARGET_ARCH) .
