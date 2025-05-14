@@ -1,5 +1,5 @@
 GOLANG_IMAGE = golang:1.24
-DOCKER_RUN = docker run --memory=4g --cpus=2 --rm -v $(PWD):/app -w /app $(GOLANG_IMAGE)
+DOCKER_RUN = docker run --memory=4g --rm -v $(PWD):/app -w /app $(GOLANG_IMAGE)
 APP := $(shell basename $(shell git remote get-url origin))
 USERNAME := dnason
 VERSION := $(shell git describe --tags --abbrev=0)-$(shell git rev-parse --short HEAD)
