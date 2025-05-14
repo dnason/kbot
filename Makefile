@@ -43,7 +43,7 @@ darwin:format get
 
 arm: format get
 	CGO_ENABLED=0 GOOS=$(TARGET_OS) GOARCH=arm go build -v -o kbot -ldflags "-X="github.com/vit-um/kbot/cmd.appVersion=${VERSION}
-	docker build --build-arg name=arm -t ${REGISTRY}/${USERNAME}/${APP}:${VERSION}-$(TARGET_ARCH)-arm .
+	docker build --build-arg name=arm -t ${REGISTRY}/${USERNAME}/${APP}:${VERSION}-${TARGET_OS}-arm .
 
 image: 
 	docker build . -t ${REGISTRY}/${USERNAME}/${APP}/${VERSION}-${TARGET_ARCH}
