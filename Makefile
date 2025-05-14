@@ -4,6 +4,11 @@ APP := $(shell basename $(shell git remote get-url origin))
 USERNAME := dnason
 VERSION := $(shell git describe --tags --abbrev=0)-$(shell git rev-parse --short HEAD)
 TARGET_ARCH := $(shell uname -m)
+ifeq ($(UNAME_ARCH),x86_64)
+	TARGET_ARCH := amd64
+else
+	TARGET_ARCH := $(UNAME_ARCH)
+endif
 TARGET_OS := $(shell uname | tr '[:upper:]' '[:lower:]')
 
 format:
