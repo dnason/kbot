@@ -1,5 +1,5 @@
 GOLANG_IMAGE = golang:1.24
-DOCKER_RUN = docker run --memory=4g --rm -v $(PWD):/app -w /app $(GOLANG_IMAGE)
+DOCKER_RUN = docker run --rm -v $(PWD):/app -w /app $(GOLANG_IMAGE)
 APP := $(shell basename $(shell git remote get-url origin))
 USERNAME := ghcr.io/dnason
 VERSION := $(shell git describe --tags --abbrev=0)-$(shell git rev-parse --short HEAD)
@@ -38,6 +38,18 @@ clean:
 	@rm -rf kbot; \
 	docker rm -f `docker ps -aq --filter ancestor=$(USERNAME)/$(APP):$(VERSION)-$(TARGET_OS)-$(TARGET_ARCH)` 2>/dev/null || true; \
 	docker rmi -f $(USERNAME)/$(APP):$(VERSION)-$(TARGET_OS)-$(TARGET_ARCH) 2>/dev/null || true
+linux:
+	sh -c "CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -buildvcs=false -v -o kbot -ldflags='-X=github.com/dnason/kbot/cmd.appVersion=$(VERSION)'"
+
+windows:
+	sh -c "CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -buildvcs=false -v -o kbot -ldflags='-X=github.com/dnason/kbot/cmd.appVersion=$(VERSION)'"
+
+macos:
+	sh -c "CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -buildvcs=false -v -o kbot -ldflags='-X=github.com/dnason/kbot/cmd.appVersion=$(VERSION)'"
+
+arm64:
+	sh -c "CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -buildvcs=false -v -o kbot -ldflags='-X=github.com/dnason/kbot/cmd.appVersion=$(VERSION)'"
+
 
 # ifeq '$(findstring ;,$(PATH))' ';'
 #     TARGET_OS := windows
