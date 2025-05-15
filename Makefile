@@ -1,8 +1,9 @@
 GOLANG_IMAGE = golang:1.24
 DOCKER_RUN = docker run --memory=4g --rm -v $(PWD):/app -w /app $(GOLANG_IMAGE)
 APP := $(shell basename $(shell git remote get-url origin))
-USERNAME := dnason
+USERNAME := ghcr.io/dnason
 VERSION := $(shell git describe --tags --abbrev=0)-$(shell git rev-parse --short HEAD)
+
 TARGET_ARCH := $(shell uname -m)
 ifeq ($(UNAME_ARCH),x86_64)
 	TARGET_ARCH := amd64
@@ -11,17 +12,17 @@ else
 endif
 TARGET_OS := $(shell uname | tr '[:upper:]' '[:lower:]')
 
-format:
-	$(DOCKER_RUN) gofmt -s -w ./
+#format:#
+#	$(DOCKER_RUN) gofmt -s -w ./
 
-get:
-	$(DOCKER_RUN) go mod download
+#get:
+#	$(DOCKER_RUN) go mod download
 
-lint:
-	$(DOCKER_RUN) sh -c "go install golang.org/x/lint/golint@latest && golint ./..."
+#lint:
+#	$(DOCKER_RUN) sh -c "go install golang.org/x/lint/golint@latest && golint ./..."
 
-test:
-	$(DOCKER_RUN) go test -v ./...
+#test:
+#	$(DOCKER_RUN) go test -v ./...
 
 build:
 	$(DOCKER_RUN) sh -c "CGO_ENABLED=0 GOOS=$(TARGET_OS) GOARCH=$(TARGET_ARCH) go build -buildvcs=false -v -o kbot -ldflags='-X=github.com/dnason/kbot/cmd.appVersion=$(VERSION)'"
