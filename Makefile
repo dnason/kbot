@@ -1,48 +1,65 @@
 APP := $(shell basename $(shell git remote get-url origin))
 REGISTRY := ghcr.io/dnason
-VERSION=$(shell git describe --tags --abbrev=0)-$(shell git rev-parse --short HEAD)
-TARGETOS=linux #linux darwin windows
-TARGETARCH=amd64 #amd64 arm64
+VERSION := $(shell git describe --tags --abbrev=0)-$(shell git rev-parse --short HEAD)
 
-format:
-	gofmt -s -w ./
-
-lint:
-	golint
-
-test:
-	go test -v
-
-get:
-	go get
-
-build: format get
-	CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -v -o kbot -ldflags "-X="github.com/dnason/kbot/cmd.appVersion=${VERSION}
-
-image:
-	docker build . -t ${REGISTRY}/${APP}:${VERSION}-${TARGETARCH}  --build-arg TARGETARCH=${TARGETARCH} --build-arg TARGETOS=${TARGETOS}
+.PHONY: linux arm64 windows macos push clean
 
 linux:
-	CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETARCH} go build -v -o kbot -ldflags "-X="github.com/dnason/kbot/cmd.appVersion=${VERSION}
-	docker build . -t ${REGISTRY}/${APP}:${VERSION}-${TARGETARCH}  --build-arg TARGETARCH=${TARGETARCH} --build-arg TARGETOS=linux
+	docker buildx build \
+		--platform linux/amd64 \
+		--build-arg VERSION=$(VERSION) \
+		--build-arg TARGETOS=linux \
+		--build-arg TARGETARCH=amd64 \
+		--build-arg BASE_IMAGE=scratch \
+		--output type=docker \
+		-t $(REGISTRY)/$(APP):$(VERSION)-linux-amd64 \
+		.
 
 arm64:
-	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -v -o kbot -ldflags "-X="github.com/dnason/kbot/cmd.appVersion=${VERSION}
-	docker build . -t ${REGISTRY}/${APP}:${VERSION}-${TARGETARCH}  --build-arg TARGETARCH=arm64 --build-arg TARGETOS=linux
+	docker buildx build \
+		--platform linux/arm64 \
+		--build-arg VERSION=$(VERSION) \
+		--build-arg TARGETOS=linux \
+		--build-arg TARGETARCH=arm64 \
+		--build-arg BASE_IMAGE=scratch \
+		--output type=docker \
+		-t $(REGISTRY)/$(APP):$(VERSION)-linux-arm64 \
+		.
 
 windows:
-	CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -v -o kbot -ldflags "-X="github.com/dnason/kbot/cmd.appVersion=${VERSION}
-	docker build . -t ${REGISTRY}/${APP}:${VERSION}-${TARGETARCH}  --build-arg TARGETARCH=amd64 --build-arg TARGETOS=windows
+	docker buildx build \
+		--platform windows/amd64 \
+		--build-arg VERSION=$(VERSION) \
+		--build-arg TARGETOS=windows \
+		--build-arg TARGETARCH=amd64 \
+		--build-arg BASE_IMAGE=mcr.microsoft.com/windows/nanoserver:ltsc2022 \
+		--output type=docker \
+		-t $(REGISTRY)/$(APP):$(VERSION)-windows-amd64 \
+		.
 
 macos:
-	CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -v -o kbot -ldflags "-X="github.com/dnason/kbot/cmd.appVersion=${VERSION}
-	docker build . -t ${REGISTRY}/${APP}:${VERSION}-${TARGETARCH}  --build-arg TARGETARCH=arm64 --build-arg TARGETOS=darwin
-
-
+	docker buildx build \
+		--platform darwin/arm64 \
+		--build-arg VERSION=$(VERSION) \
+		--build-arg TARGETOS=darwin \
+		--build-arg TARGETARCH=arm64 \
+		--build-arg BASE_IMAGE=scratch \
+		--output type=docker \
+		-t $(REGISTRY)/$(APP):$(VERSION)-darwin \
+		.
 
 push:
-	docker push ${REGISTRY}/${APP}:${VERSION}-${TARGETARCH}
+	docker buildx build \
+		--platform linux/amd64,linux/arm64,darwin/arm64,windows/amd64 \
+		--build-arg VERSION=$(VERSION) \
+		--build-arg BASE_IMAGE=scratch \
+		--push \
+		-t $(REGISTRY)/$(APP):$(VERSION) \
+		.
 
 clean:
-	rm -rf kbot
-	docker rmi ${REGISTRY}/${APP}:${VERSION}-${TARGETARCH}
+	docker image rm $(REGISTRY)/$(APP):$(VERSION)-linux-amd64 || true
+	docker image rm $(REGISTRY)/$(APP):$(VERSION)-linux-arm64 || true
+	docker image rm $(REGISTRY)/$(APP):$(VERSION)-windows-amd64 || true
+	docker image rm $(REGISTRY)/$(APP):$(VERSION)-darwin || true
+	rm -f kbot kbot.exe
