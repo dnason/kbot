@@ -58,8 +58,6 @@ push:
 		.
 
 clean:
-	docker image rm $(REGISTRY)/$(APP):$(VERSION)-linux-amd64 || true
-	docker image rm $(REGISTRY)/$(APP):$(VERSION)-linux-arm64 || true
-	docker image rm $(REGISTRY)/$(APP):$(VERSION)-windows-amd64 || true
-	docker image rm $(REGISTRY)/$(APP):$(VERSION)-darwin || true
-	rm -f kbot kbot.exe
+	@rm -rf kbot*; \
+	DOCKER_IMAGE=$$(docker images -q | head -n 1); \
+	if [ -n "$${DOCKER_IMAGE}" ]; then  docker rmi -f $${IMG1};
