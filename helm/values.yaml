@@ -1,0 +1,12 @@
+replicaCount: 1
+
+image:
+  repository: dnason
+  tag: "v1.0.2"
+  arch: amd64
+secret:
+  name: "kbot"
+  env: "TELE_TOKEN"
+  key: "key"
+securityContext:
+  privileged: true
