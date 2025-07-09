@@ -1,63 +1,80 @@
-APP := $(shell basename $(shell git remote get-url origin))
-REGISTRY := ghcr.io/dnason
-VERSION := $(shell git describe --tags --abbrev=0)-$(shell git rev-parse --short HEAD)
+ifeq '$(findstring ;,$(PATH))' ';'
+    detected_OS := windows
+	detected_arch := amd64
+else
+    detected_OS := $(shell uname | tr '[:upper:]' '[:lower:]' 2> /dev/null || echo Unknown)
+    detected_OS := $(patsubst CYGWIN%,Cygwin,$(detected_OS))
+    detected_OS := $(patsubst MSYS%,MSYS,$(detected_OS))
+    detected_OS := $(patsubst MINGW%,MSYS,$(detected_OS))
+	detected_arch := $(shell dpkg --print-architecture 2>/dev/null || amd64)
+endif
 
-.PHONY: linux arm64 windows macos push clean
+#colors:
+B = \033[1;94m#   BLUE
+G = \033[1;92m#   GREEN
+Y = \033[1;93m#   YELLOW
+R = \033[1;31m#   RED
+M = \033[1;95m#   MAGENTA
+K = \033[K#       ERASE END OF LINE
+D = \033[0m#      DEFAULT
+A = \007#         BEEP
 
-linux:
-	docker buildx build \
-		--platform linux/amd64 \
-		--build-arg VERSION=$(VERSION) \
-		--build-arg TARGETOS=linux \
-		--build-arg TARGETARCH=amd64 \
-		--build-arg BASE_IMAGE=scratch \
-		--output type=docker \
-		-t $(REGISTRY)/$(APP):$(VERSION)-linux-amd64 \
-		.
+APP=$(shell basename $(shell git remote get-url origin))
+REGESTRY := ghcr.io/dnason
+VERSION=$(shell git describe --tags --abbrev=0 --always)-$(shell git rev-parse --short HEAD)
+TARGETARCH=amd64 
+TARGETOS=${detected_OS}
 
-arm64:
-	docker buildx build \
-		--platform linux/arm64 \
-		--build-arg VERSION=$(VERSION) \
-		--build-arg TARGETOS=linux \
-		--build-arg TARGETARCH=arm64 \
-		--build-arg BASE_IMAGE=scratch \
-		--output type=docker \
-		-t $(REGISTRY)/$(APP):$(VERSION)-linux-arm64 \
-		.
+format:
+	gofmt -s -w ./
 
-windows:
-	docker buildx build \
-		--platform windows/amd64 \
-		--build-arg VERSION=$(VERSION) \
-		--build-arg TARGETOS=windows \
-		--build-arg TARGETARCH=amd64 \
-		--build-arg BASE_IMAGE=mcr.microsoft.com/windows/nanoserver:ltsc2022 \
-		--output type=docker \
-		-t $(REGISTRY)/$(APP):$(VERSION)-windows-amd64 \
-		.
+get:
+	go get
 
-macos:
-	docker buildx build \
-		--platform darwin/arm64 \
-		--build-arg VERSION=$(VERSION) \
-		--build-arg TARGETOS=darwin \
-		--build-arg TARGETARCH=arm64 \
-		--build-arg BASE_IMAGE=scratch \
-		--output type=docker \
-		-t $(REGISTRY)/$(APP):$(VERSION)-darwin \
-		.
+lint:
+	golint
+
+test:
+	go test -v
+
+build: format get
+	@printf "$GDetected OS/ARCH: $R$(detected_OS)/$(detected_arch)$D\n"
+	CGO_ENABLED=0 GOOS=$(detected_OS) GOARCH=$(detected_arch) go build -v -o kbot -ldflags "-X="github.com/vit-um/kbot/cmd.appVersion=${VERSION}
+
+linux: format get
+	@printf "$GTarget OS/ARCH: $Rlinux/amd64$D\n"
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -o kbot -ldflags "-X="github.com/vit-um/kbot/cmd.appVersion=${VERSION}
+	docker build --build-arg name=linux -t ${REGESTRY}/${APP}:${VERSION}-linux-amd64 .
+
+windows: format get
+	@printf "$GTarget OS/ARCH: $Rwindows/$(detected_arch)$D\n"
+	CGO_ENABLED=0 GOOS=windows GOARCH=$(detected_arch) go build -v -o kbot -ldflags "-X="github.com/vit-um/kbot/cmd.appVersion=${VERSION}
+	docker build --build-arg name=windows -t ${REGESTRY}/${APP}:${VERSION}-windows-$(detected_arch) .
+
+darwin:format get
+	@printf "$GTarget OS/ARCH: $Rdarwin/$(detected_arch)$D\n"
+	CGO_ENABLED=0 GOOS=darwin GOARCH=$(detected_arch) go build -v -o kbot -ldflags "-X="github.com/vit-um/kbot/cmd.appVersion=${VERSION}
+	docker build --build-arg name=darwin -t ${REGESTRY}/${APP}:${VERSION}-darwin-$(detected_arch) .
+
+arm: format get
+	@printf "$GTarget OS/ARCH: $R$(detected_OS)/arm$D\n"
+	CGO_ENABLED=0 GOOS=$(detected_OS) GOARCH=arm go build -v -o kbot -ldflags "-X="github.com/vit-um/kbot/cmd.appVersion=${VERSION}
+	docker build --build-arg name=arm -t ${REGESTRY}/${APP}:${VERSION}-$(detected_OS)-arm .
+
+image:
+	docker build . -t ${REGESTRY}/${APP}:${VERSION}-${detected_OS}-${TARGETARCH} --build-arg TARGETOS=${detected_OS} --build-arg TARGETARCH=${TARGETARCH}
 
 push:
-	docker buildx build \
-		--platform linux/amd64,linux/arm64,darwin/arm64,windows/amd64 \
-		--build-arg VERSION=$(VERSION) \
-		--build-arg BASE_IMAGE=scratch \
-		--push \
-		-t $(REGISTRY)/$(APP):$(VERSION) \
-		.
+	docker push ${REGESTRY}/${APP}:${VERSION}-linux-amd64
+
+dive: image
+	IMG1=$$(docker images -q | head -n 1); \
+	CI=true docker run -ti --rm -v /var/run/docker.sock:/var/run/docker.sock wagoodman/dive --ci --lowestEfficiency=0.99 $${IMG1}; \
+	IMG2=$$(docker images -q | sed -n 2p); \
+	docker rmi $${IMG1}; \
+	docker rmi $${IMG2}
 
 clean:
-	@rm -rf kbot*; \
-	DOCKER_IMAGE=$$(docker images -q | head -n 1); \
-	if [ -n "$${DOCKER_IMAGE}" ]; then  docker rmi -f $${IMG1};
+	@rm -rf kbot; \
+	IMG1=$$(docker images -q | head -n 1); \
+	if [ -n "$${IMG1}" ]; then  docker rmi -f $${IMG1}; else printf "$RImage not found$D\n"; fi
