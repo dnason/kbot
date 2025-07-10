@@ -2,7 +2,7 @@ replicaCount: 1
 image:
   registry: "ghcr.io"
   repository: "dnason/kbot"
-  tag: "1.0.3-38205b2"
+  tag: "1.0.3-6cdf938"
   arch: amd64
   os: linux
 secret:
