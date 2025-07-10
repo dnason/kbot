@@ -1,7 +1,7 @@
 replicaCount: 1
 image:
   repository: dnason
-  tag: "1.0.3-d5a52da"
+  tag: "1.0.3-38205b2"
   arch: amd64
   os: linux
 secret:
